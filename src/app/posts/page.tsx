@@ -19,7 +19,7 @@ export default function Page() {
     <>
       <h1 className="ml-2">글 목록</h1>
 
-      {posts.length == 0 && <div>로딩중...</div>}
+      {posts.length == 0 && <div className="ml-2" >로딩중...</div>}
 
       <ul>
         {posts.map((post) => (
