@@ -1,5 +1,6 @@
 "use client";
 
+import type { PostDto } from "@/type/post";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 
