@@ -4,16 +4,24 @@
 // 이 함수는 내부적으로 fetch를 래핑하여 인증, 응답 파싱 등을 처리한다고 가정함.
 import { apiFetch } from "@/lib/backend/client";
 
+// Next.js 클라이언트 측 라우팅을 위한 useRouter 훅 가져오기.
+import { useRouter } from "next/navigation";
+
 /**
  * 글쓰기 페이지 컴포넌트 정의.
- * 사용자로부터 제목과 내용을 입력받아 백엔드 API로 전송하는 기능을 담당함.
+ * 사용자로부터 제목과 내용을 입력받아 백엔드 API로 전송하고,
+ * 성공 시 해당 게시글 상세 페이지로 **History를 대체하여** 이동하는 기능을 담당함.
  *
  * @returns 글쓰기 폼을 포함하는 React 요소
  */
 export default function Page() {
+  // useRouter 훅을 사용하여 라우터 객체 초기화.
+  const router = useRouter();
+
   /**
    * 폼 제출 이벤트 핸들러 정의.
-   * 유효성 검사 후, 'api/v1/posts' 엔드포인트로 게시글 데이터를 POST 요청으로 전송함.
+   * 입력 데이터 유효성 검사 후, 'api/v1/posts' 엔드포인트로 데이터를 POST 요청으로 전송함.
+   * 성공적으로 게시글이 생성되면 History를 대체(replace)하여 상세 페이지로 이동함.
    *
    * @param e 폼 이벤트 객체 (React.FormEvent<HTMLFormElement>)
    */
@@ -69,6 +77,11 @@ export default function Page() {
       .then((data) => {
         // 백엔드에서 받은 메시지(예: "게시글이 성공적으로 등록되었습니다.")를 사용자에게 알림
         alert(data.msg);
+
+        // 생성된 게시글의 ID를 사용하여 해당 상세 페이지로 이동 (라우팅)
+        // router.replace: 현재 페이지를 History 스택에서 제거하고 새 URL로 대체함.
+        // (사용자가 뒤로가기 버튼을 눌렀을 때 글쓰기 페이지가 아닌 이전 페이지로 돌아감)
+        router.replace(`/posts/${data.data.id}`);
       });
   };
 
