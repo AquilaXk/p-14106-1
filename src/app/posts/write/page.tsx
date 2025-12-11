@@ -48,6 +48,12 @@ export default function Page() {
       return; // 함수 실행 중단
     }
 
+    if (titleInput.value.length < 2) {
+      alert("제목은 2글자 이상 입력해주세요.");
+      titleInput.focus();
+      return;
+    }
+
     // --- 내용 필드 유효성 검사 ---
     // 내용 입력 값의 앞뒤 공백 제거 및 값 업데이트
     contentTextarea.value = contentTextarea.value.trim();
@@ -57,6 +63,12 @@ export default function Page() {
       alert("내용을 입력해주세요.");
       contentTextarea.focus(); // 텍스트 영역으로 포커스 이동
       return; // 함수 실행 중단
+    }
+
+    if (contentTextarea.value.length < 2) {
+      alert("내용은 2글자 이상 입력해주세요.");
+      contentTextarea.focus();
+      return;
     }
 
     // --- API 데이터 전송 (게시글 생성) ---

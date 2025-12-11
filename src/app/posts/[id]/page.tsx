@@ -56,6 +56,12 @@ export default function Page() {
       return;
     }
 
+    if (contentTextarea.value.length < 2) {
+      alert("댓글 내용은 2글자 이상 입력해주세요.");
+      contentTextarea.focus();
+      return;
+    }
+
     apiFetch(`/api/v1/posts/${id}/comments`, {
       method: "POST",
       body: JSON.stringify({
@@ -88,7 +94,7 @@ export default function Page() {
       <div className="ml-2">제목: {post.title}</div>
       <div className="ml-2" style={{ whiteSpace: "pre-line" }}>{post.content}</div>
 
-      <div className="flex gap-2">
+      <div className="flex gap-2 ml-2">
         <button
           className="p-2 rounded border"
           onClick={() => confirm(`${post.id}번 글을 정말로 삭제하시겠습니까?`) && deletePost(post.id)}
@@ -100,7 +106,7 @@ export default function Page() {
         </Link>
       </div>
 
-      <h2>댓글 작성</h2>
+      <h2 className="ml-2">댓글 작성</h2>
 
       <form className="p-2" onSubmit={handleCommentWriteFormSubmit}>
         <textarea
@@ -113,7 +119,7 @@ export default function Page() {
         </button>
       </form>
 
-      <h2>댓글 목록</h2>
+      <h2 className="ml-2">댓글 목록</h2>
 
       {postComments == null && <div>댓글 로딩중...</div>}
 
@@ -124,10 +130,10 @@ export default function Page() {
       {postComments != null && postComments.length > 0 && (
         <ul>
           {postComments.map((comment) => (
-            <li key={comment.id}>
+            <li key={comment.id} className="ml-2">
               {comment.id} : {comment.content}
               <button
-                className="p-2 rounded border"
+                className="ml-2 p-2 rounded border"
                 onClick={() =>
                   confirm(`${comment.id}번 댓글을 정말로 삭제하시겠습니까?`) &&
                   deleteComment(id, comment.id)
