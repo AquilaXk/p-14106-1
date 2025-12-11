@@ -8,12 +8,14 @@ import { useEffect, useState } from "react";
 const NEXT_PUBLIC_API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
 
 export default function Page() {
-  const [posts, setPosts] = useState<{ id: number; title: string }[]>([]);
+  const [posts, setPosts] = useState<PostDto[] | null>(null);
 
   useEffect(() => {
     apiFetch(`/api/v1/posts`)
       .then(setPosts);
   }, []);
+
+  if (posts == null) return <div>로딩중...</div>;
 
   return (
     <>
@@ -21,13 +23,17 @@ export default function Page() {
 
       {posts.length == 0 && <div className="ml-2" >로딩중...</div>}
 
-      <ul>
-        {posts.map((post) => (
-          <li key={post.id}>
-            <Link className="ml-2" href={`/posts/${post.id}`}>{post.title}</Link>
-          </li>
-        ))}
-      </ul>
+      {posts.length == 0 && <div className="ml-2">글이 없습니다.</div>}
+
+      {posts.length > 0 && (
+        <ul>
+          {posts.map((post) => (
+            <li key={post.id}>
+              <Link href={`/posts/${post.id}`} className="ml-2">{post.title}</Link>
+            </li>
+          ))}
+        </ul>
+      )}
       <div>
         <Link href="/posts/write" className="ml-2">글쓰기</Link>
       </div>
