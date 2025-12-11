@@ -1,5 +1,9 @@
 "use client"; // 이 컴포넌트가 클라이언트 측에서 렌더링되어야 함을 명시
 
+// 커스텀 API 통신 유틸리티 함수(apiFetch) 가져오기.
+// 이 함수는 내부적으로 fetch를 래핑하여 인증, 응답 파싱 등을 처리한다고 가정함.
+import { apiFetch } from "@/lib/backend/client";
+
 /**
  * 글쓰기 페이지 컴포넌트 정의.
  * 사용자로부터 제목과 내용을 입력받아 백엔드 API로 전송하는 기능을 담당함.
@@ -48,7 +52,8 @@ export default function Page() {
     }
 
     // --- API 데이터 전송 (게시글 생성) ---
-    fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/v1/posts`, {
+    // apiFetch 유틸리티 함수를 사용하여 게시글 생성 API 호출
+    apiFetch(`/api/v1/posts`, {
       method: "POST", // HTTP POST 메서드 사용
       headers: {
         // 데이터 형식 지정 (JSON 및 UTF-8 인코딩)
@@ -60,11 +65,10 @@ export default function Page() {
         content: contentTextarea.value,
       }),
     })
-      // 1. 응답 객체를 JSON 형태로 파싱
-      .then((response) => response.json())
-      // 2. 파싱된 데이터(응답 메시지) 처리
+      // apiFetch의 응답 결과(파싱된 JSON 데이터) 처리
       .then((data) => {
-        alert(data.msg); // 백엔드에서 받은 메시지(예: "게시글이 성공적으로 등록되었습니다.")를 사용자에게 알림
+        // 백엔드에서 받은 메시지(예: "게시글이 성공적으로 등록되었습니다.")를 사용자에게 알림
+        alert(data.msg);
       });
   };
 
