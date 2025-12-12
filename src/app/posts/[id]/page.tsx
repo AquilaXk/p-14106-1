@@ -105,7 +105,7 @@ function PostInfo({ postState }: { postState: ReturnType<typeof usePost> }) {
       <div className="ml-2">제목: {post.title}</div>
       <div className="ml-2" style={{ whiteSpace: "pre-line" }}>{post.content}</div>
 
-      <div className="flex gap-2">
+      <div className="flex gap-2 ml-2">
         <button className="p-2 rounded border" onClick={deletePost}>
           삭제
         </button>
@@ -117,28 +117,14 @@ function PostInfo({ postState }: { postState: ReturnType<typeof usePost> }) {
   );
 }
 
-function PostCommentWriteAndList({
+function PostCommentWrite({
   id,
   postCommentsState,
 }: {
   id: number;
   postCommentsState: ReturnType<typeof usePostComments>;
 }) {
-  const {
-    postComments,
-    deleteComment: _deleteComment,
-    writeComment,
-  } = postCommentsState;
-
-  if (postComments == null) return <div className="ml-2">로딩중...</div>;
-
-  const deleteComment = (commentId: number) => {
-    if (!confirm(`${commentId}번 댓글을 정말로 삭제하시겠습니까?`)) return;
-
-    _deleteComment(id, commentId, (data) => {
-      alert(data.msg);
-    });
-  };
+  const { writeComment } = postCommentsState;
 
   const handleCommentWriteFormSubmit = (
     e: React.FormEvent<HTMLFormElement>
@@ -187,16 +173,39 @@ function PostCommentWriteAndList({
           작성
         </button>
       </form>
+    </>
+  );
+}
+
+function PostCommentList({
+  id,
+  postCommentsState,
+}: {
+  id: number;
+  postCommentsState: ReturnType<typeof usePostComments>;
+}) {
+  const { postComments, deleteComment: _deleteComment } = postCommentsState;
+
+  const deleteComment = (commentId: number) => {
+    if (!confirm(`${id}번 댓글을 정말로 삭제하시겠습니까?`)) return;
+
+    _deleteComment(id, commentId, (data) => {
+      alert(data.msg);
+    })
+  };
+
+  if (postComments == null) return <div>로딩중...</div>;
+
+  return (
+    <>
 
       <h2 className="ml-2">댓글 목록</h2>
 
-      {postComments == null && <div className="ml-2">댓글 로딩중...</div>}
-
-      {postComments != null && postComments.length == 0 && (
+      {postComments.length == 0 && (
         <div className="ml-2">댓글이 없습니다.</div>
       )}
 
-      {postComments != null && postComments.length > 0 && (
+      {postComments.length > 0 && (
         <ul>
           {postComments.map((comment) => (
             <li key={comment.id} className="ml-2">
@@ -211,6 +220,22 @@ function PostCommentWriteAndList({
           ))}
         </ul>
       )}
+    </>
+  );
+}
+
+function PostCommentWriteAndList({
+  id,
+  postCommentsState,
+}: {
+  id: number;
+  postCommentsState: ReturnType<typeof usePostComments>;
+}) {
+  return (
+    <>
+      <PostCommentWrite id={id} postCommentsState={postCommentsState} />
+
+      <PostCommentList id={id} postCommentsState={postCommentsState} />
     </>
   );
 }
