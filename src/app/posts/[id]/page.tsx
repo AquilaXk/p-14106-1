@@ -3,8 +3,8 @@
 import { apiFetch } from "@/lib/backend/client";
 import type { PostCommentDto, PostWithContentDto } from "@/type/post";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { use, useEffect, useState } from "react";
+import { useParams, useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
 
 function usePost(id: number) {
   const [post, setPost] = useState<PostWithContentDto | null>(null);
@@ -84,18 +84,20 @@ function usePostComments(id: number) {
   };
 }
 
-function PostInfo({
-  postState,
-}: {
-  postState: {
-    post: PostWithContentDto | null;
-    deletePost: (id: number, onSuccess: () => void) => void;
-  };
-}) {
+function PostInfo({ postState }: { postState: ReturnType<typeof usePost> }) {
   const router = useRouter();
-  const { post, deletePost } = postState;
+
+  const { post, deletePost: _deletePost } = postState;
 
   if (post == null) return <div className="ml-2">로딩중...</div>;
+
+  const deletePost = () => {
+    if (!confirm(`${post.id}번 글을 정말로 삭제하시겠습니까?`)) return;
+
+    _deletePost(post.id, () => {
+      router.replace("/posts");
+    });
+  };
 
   return (
     <>
@@ -104,15 +106,7 @@ function PostInfo({
       <div className="ml-2" style={{ whiteSpace: "pre-line" }}>{post.content}</div>
 
       <div className="flex gap-2">
-        <button
-          className="p-2 rounded border ml-2"
-          onClick={() =>
-            confirm(`${post.id}번 글을 정말로 삭제하시겠습니까?`) &&
-            deletePost(post.id, () => {
-              router.replace("/posts");
-            })
-          }
-        >
+        <button className="p-2 rounded border" onClick={deletePost}>
           삭제
         </button>
         <Link className="p-2 rounded border" href={`/posts/${post.id}/edit`}>
@@ -128,23 +122,23 @@ function PostCommentWriteAndList({
   postCommentsState,
 }: {
   id: number;
-  postCommentsState: {
-    postComments: PostCommentDto[] | null;
-    deleteComment: (
-      id: number,
-      commentId: number,
-      onSuccess: (data: any) => void
-    ) => void;
-    writeComment: (
-      id: number,
-      content: string,
-      onSuccess: (data: any) => void
-    ) => void;
-  };
+  postCommentsState: ReturnType<typeof usePostComments>;
 }) {
-  const { postComments, deleteComment, writeComment } = postCommentsState;
+  const {
+    postComments,
+    deleteComment: _deleteComment,
+    writeComment,
+  } = postCommentsState;
 
   if (postComments == null) return <div className="ml-2">로딩중...</div>;
+
+  const deleteComment = (commentId: number) => {
+    if (!confirm(`${commentId}번 댓글을 정말로 삭제하시겠습니까?`)) return;
+
+    _deleteComment(id, commentId, (data) => {
+      alert(data.msg);
+    });
+  };
 
   const handleCommentWriteFormSubmit = (
     e: React.FormEvent<HTMLFormElement>
@@ -196,10 +190,10 @@ function PostCommentWriteAndList({
 
       <h2 className="ml-2">댓글 목록</h2>
 
-      {postComments == null && <div>댓글 로딩중...</div>}
+      {postComments == null && <div className="ml-2">댓글 로딩중...</div>}
 
       {postComments != null && postComments.length == 0 && (
-        <div>댓글이 없습니다.</div>
+        <div className="ml-2">댓글이 없습니다.</div>
       )}
 
       {postComments != null && postComments.length > 0 && (
@@ -209,12 +203,7 @@ function PostCommentWriteAndList({
               {comment.id} : {comment.content}
               <button
                 className="p-2 rounded border ml-2"
-                onClick={() =>
-                  confirm(`${comment.id}번 댓글을 정말로 삭제하시겠습니까?`) &&
-                  deleteComment(id, comment.id, (data) => {
-                    alert(data.msg);
-                  })
-                }
+                onClick={() => deleteComment(comment.id)}
               >
                 삭제
               </button>
@@ -226,9 +215,10 @@ function PostCommentWriteAndList({
   );
 }
 
-export default function Page({ params }: { params: Promise<{ id: string }> }) {
-  const { id: idStr } = use(params);
+export default function Page() {
+  const { id: idStr } = useParams<{ id: string }>();
   const id = parseInt(idStr);
+
   const postState = usePost(id);
   const postCommentsState = usePostComments(id);
 
