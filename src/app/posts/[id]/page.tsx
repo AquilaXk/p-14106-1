@@ -1,20 +1,13 @@
 "use client";
 
-import type { PostCommentDto, PostWithContentDto } from "@/type/post";
 import { apiFetch } from "@/lib/backend/client";
-import { use, useEffect, useState } from "react";
-import { useParams, useRouter } from "next/navigation";
+import type { PostCommentDto, PostWithContentDto } from "@/type/post";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { use, useEffect, useState } from "react";
 
-
-
-export default function Page() {
-  const { id: idStr } = useParams<{ id: string }>();
-  const id = Number(idStr);
+function PostInfo({ post }: { post: PostWithContentDto }) {
   const router = useRouter();
-
-  const [post, setPost] = useState<PostWithContentDto | null>(null);
-  const [postComments, setPostComments] = useState<PostCommentDto[] | null>([]);
 
   const deletePost = (id: number) => {
     apiFetch(`/api/v1/posts/${id}`, {
@@ -25,6 +18,39 @@ export default function Page() {
     });
   };
 
+  return (
+    <>
+      <div className="ml-2">번호 : {post.id}</div>
+      <div className="ml-2">제목: {post.title}</div>
+      <div className="ml-2" style={{ whiteSpace: "pre-line" }}>{post.content}</div>
+
+      <div className="flex gap-2">
+        <button
+          className="p-2 rounded border ml-2"
+          onClick={() =>
+            confirm(`${post.id}번 글을 정말로 삭제하시겠습니까?`) &&
+            deletePost(post.id)
+          }
+        >
+          삭제
+        </button>
+        <Link className="p-2 rounded border" href={`/posts/${post.id}/edit`}>
+          수정
+        </Link>
+      </div>
+    </>
+  );
+}
+
+function PostCommentWriteAndList({
+  id,
+  postComments,
+  setPostComments,
+}: {
+  id: number;
+  postComments: PostCommentDto[] | null;
+  setPostComments: (postComments: PostCommentDto[]) => void;
+}) {
   const deleteComment = (id: number, commentId: number) => {
     apiFetch(`/api/v1/posts/${id}/comments/${commentId}`, {
       method: "DELETE",
@@ -57,7 +83,7 @@ export default function Page() {
     }
 
     if (contentTextarea.value.length < 2) {
-      alert("댓글 내용은 2글자 이상 입력해주세요.");
+      alert("댓글 내용을 2자 이상 입력해주세요.");
       contentTextarea.focus();
       return;
     }
@@ -77,35 +103,8 @@ export default function Page() {
     });
   };
 
-  useEffect(() => {
-    apiFetch(`/api/v1/posts/${id}`)
-      .then(setPost);
-    apiFetch(`/api/v1/posts/${id}/comments`)
-      .then(setPostComments);
-  }, []);
-
-  if (post == null) return <div className="ml-2">로딩 중 . . .</div>;
-
   return (
     <>
-      <h1 className="ml-2">글 상세페이지</h1>
-
-      <div className="ml-2">번호 : {post.id}</div>
-      <div className="ml-2">제목: {post.title}</div>
-      <div className="ml-2" style={{ whiteSpace: "pre-line" }}>{post.content}</div>
-
-      <div className="flex gap-2 ml-2">
-        <button
-          className="p-2 rounded border"
-          onClick={() => confirm(`${post.id}번 글을 정말로 삭제하시겠습니까?`) && deletePost(post.id)}
-        >
-          삭제
-        </button>
-        <Link className="p-2 rounded border" href={`/posts/${post.id}/edit`}>
-          수정
-        </Link>
-      </div>
-
       <h2 className="ml-2">댓글 작성</h2>
 
       <form className="p-2" onSubmit={handleCommentWriteFormSubmit}>
@@ -113,8 +112,10 @@ export default function Page() {
           className="border p-2 rounded"
           name="content"
           placeholder="댓글 내용"
+          maxLength={100}
+          rows={5}
         />
-        <button className="p-2 rounded border" type="submit">
+        <button className="p-2 rounded border ml-2" type="submit">
           작성
         </button>
       </form>
@@ -133,7 +134,7 @@ export default function Page() {
             <li key={comment.id} className="ml-2">
               {comment.id} : {comment.content}
               <button
-                className="ml-2 p-2 rounded border"
+                className="p-2 rounded border ml-2"
                 onClick={() =>
                   confirm(`${comment.id}번 댓글을 정말로 삭제하시겠습니까?`) &&
                   deleteComment(id, comment.id)
@@ -145,6 +146,45 @@ export default function Page() {
           ))}
         </ul>
       )}
+    </>
+  );
+}
+
+export default function Page({ params }: { params: Promise<{ id: number }> }) {
+  const { id } = use(params);
+
+  const [post, setPost] = useState<PostWithContentDto | null>(null);
+  const [postComments, setPostComments] = useState<PostCommentDto[] | null>(
+    null
+  );
+
+  useEffect(() => {
+    apiFetch(`/api/v1/posts/${id}`)
+      .then(setPost)
+      .catch((error) => {
+        alert(`${error.resultCode} : ${error.msg}`);
+      });
+
+    apiFetch(`/api/v1/posts/${id}/comments`)
+      .then(setPostComments)
+      .catch((error) => {
+        alert(`${error.resultCode} : ${error.msg}`);
+      });
+  }, []);
+
+  if (post == null) return <div>로딩중...</div>;
+
+  return (
+    <>
+      <h1 className="ml-2">글 상세페이지</h1>
+
+      <PostInfo post={post} />
+
+      <PostCommentWriteAndList
+        id={id}
+        postComments={postComments}
+        setPostComments={setPostComments}
+      />
     </>
   );
 }
