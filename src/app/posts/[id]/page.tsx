@@ -29,14 +29,73 @@ function usePost(id: number) {
   };
 }
 
+function usePostComments(id: number) {
+  const [postComments, setPostComments] = useState<PostCommentDto[] | null>(
+    null
+  );
+
+  useEffect(() => {
+    apiFetch(`/api/v1/posts/${id}/comments`)
+      .then(setPostComments)
+      .catch((error) => {
+        alert(`${error.resultCode} : ${error.msg}`);
+      });
+  }, []);
+
+  const deleteComment = (
+    id: number,
+    commentId: number,
+    onSuccess: (data: any) => void
+  ) => {
+    apiFetch(`/api/v1/posts/${id}/comments/${commentId}`, {
+      method: "DELETE",
+    }).then((data) => {
+      if (postComments == null) return;
+
+      setPostComments(postComments.filter((c) => c.id != commentId));
+
+      onSuccess(data);
+    });
+  };
+
+  const writeComment = (
+    id: number,
+    content: string,
+    onSuccess: (data: any) => void
+  ) => {
+    apiFetch(`/api/v1/posts/${id}/comments`, {
+      method: "POST",
+      body: JSON.stringify({
+        content,
+      }),
+    }).then((data) => {
+      if (postComments == null) return;
+
+      setPostComments([...postComments, data.data]);
+
+      onSuccess(data);
+    });
+  };
+
+  return {
+    postComments,
+    deleteComment,
+    writeComment,
+  };
+}
+
 function PostInfo({
-  post,
-  deletePost,
+  postState,
 }: {
-  post: PostWithContentDto;
-  deletePost: (id: number, onSuccess: () => void) => void;
+  postState: {
+    post: PostWithContentDto | null;
+    deletePost: (id: number, onSuccess: () => void) => void;
+  };
 }) {
   const router = useRouter();
+  const { post, deletePost } = postState;
+
+  if (post == null) return <div className="ml-2">로딩중...</div>;
 
   return (
     <>
@@ -66,24 +125,26 @@ function PostInfo({
 
 function PostCommentWriteAndList({
   id,
-  postComments,
-  setPostComments,
+  postCommentsState,
 }: {
   id: number;
-  postComments: PostCommentDto[] | null;
-  setPostComments: (postComments: PostCommentDto[]) => void;
-}) {
-  const deleteComment = (id: number, commentId: number) => {
-    apiFetch(`/api/v1/posts/${id}/comments/${commentId}`, {
-      method: "DELETE",
-    }).then((data) => {
-      alert(data.msg);
-
-      if (postComments == null) return;
-
-      setPostComments(postComments.filter((c) => c.id != commentId));
-    });
+  postCommentsState: {
+    postComments: PostCommentDto[] | null;
+    deleteComment: (
+      id: number,
+      commentId: number,
+      onSuccess: (data: any) => void
+    ) => void;
+    writeComment: (
+      id: number,
+      content: string,
+      onSuccess: (data: any) => void
+    ) => void;
   };
+}) {
+  const { postComments, deleteComment, writeComment } = postCommentsState;
+
+  if (postComments == null) return <div className="ml-2">로딩중...</div>;
 
   const handleCommentWriteFormSubmit = (
     e: React.FormEvent<HTMLFormElement>
@@ -110,18 +171,9 @@ function PostCommentWriteAndList({
       return;
     }
 
-    apiFetch(`/api/v1/posts/${id}/comments`, {
-      method: "POST",
-      body: JSON.stringify({
-        content: contentTextarea.value,
-      }),
-    }).then((data) => {
+    writeComment(id, contentTextarea.value, (data) => {
       alert(data.msg);
       contentTextarea.value = "";
-
-      if (postComments == null) return;
-
-      setPostComments([...postComments, data.data]);
     });
   };
 
@@ -159,7 +211,9 @@ function PostCommentWriteAndList({
                 className="p-2 rounded border ml-2"
                 onClick={() =>
                   confirm(`${comment.id}번 댓글을 정말로 삭제하시겠습니까?`) &&
-                  deleteComment(id, comment.id)
+                  deleteComment(id, comment.id, (data) => {
+                    alert(data.msg);
+                  })
                 }
               >
                 삭제
@@ -172,37 +226,19 @@ function PostCommentWriteAndList({
   );
 }
 
-export default function Page({ params }: { params: Promise<{ id: number }> }) {
-  const { id } = use(params);
-
-  const { post, deletePost } = usePost(id);
-
-  const [postComments, setPostComments] = useState<PostCommentDto[] | null>(
-    null
-  );
-
-  useEffect(() => {
-
-    apiFetch(`/api/v1/posts/${id}/comments`)
-      .then(setPostComments)
-      .catch((error) => {
-        alert(`${error.resultCode} : ${error.msg}`);
-      });
-  }, []);
-
-  if (post == null) return <div>로딩중...</div>;
+export default function Page({ params }: { params: Promise<{ id: string }> }) {
+  const { id: idStr } = use(params);
+  const id = parseInt(idStr);
+  const postState = usePost(id);
+  const postCommentsState = usePostComments(id);
 
   return (
     <>
       <h1 className="ml-2">글 상세페이지</h1>
 
-      <PostInfo post={post} deletePost={deletePost} />
+      <PostInfo postState={postState} />
 
-      <PostCommentWriteAndList
-        id={id}
-        postComments={postComments}
-        setPostComments={setPostComments}
-      />
+      <PostCommentWriteAndList id={id} postCommentsState={postCommentsState} />
     </>
   );
 }
