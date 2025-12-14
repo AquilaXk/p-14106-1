@@ -77,7 +77,17 @@ function usePostComments(postId: number) {
     apiFetch(`/api/v1/posts/${postId}/comments/${commentId}`, {
       method: "PUT",
       body: JSON.stringify({ content }),
-    }).then(onSuccess);
+    }).then((data) => {
+      if (postComments == null) return;
+
+      setPostComments(
+        postComments.map((comment) =>
+          comment.id === commentId ? { ...comment, content } : comment
+        )
+      );
+
+      onSuccess(data);
+    });
   };
 
   return {
@@ -163,7 +173,10 @@ function PostCommentWrite({
     <>
       <h2 className="ml-2">{postId}번글에 대한 댓글 작성</h2>
 
-      <form className="p-2" onSubmit={handleCommentWriteFormSubmit}>
+      <form
+        className="flex gap-2 items-center"
+        onSubmit={handleCommentWriteFormSubmit}
+      >
         <textarea
           className="border p-2 rounded"
           name="content"
@@ -231,11 +244,13 @@ function PostCommentListItem({
   };
 
   return (
-    <li className="flex gap-2 items-center">
+    <li className="flex gap-2 items-start">
       <span>{comment.id} :</span>
-      {!modifyMode && <span>{comment.content}</span>}
+      {!modifyMode && (
+        <span style={{ whiteSpace: "pre-line" }}>{comment.content}</span>
+      )}
       {modifyMode && (
-        <form className="flex gap-2 items-center" onSubmit={handleSubmit}>
+        <form className="flex gap-2 items-start" onSubmit={handleSubmit}>
           <textarea
             className="border p-2 rounded"
             name="content"
@@ -251,7 +266,7 @@ function PostCommentListItem({
         </form>
       )}
       <button className="p-2 rounded border ml-2" onClick={toggleModifyMode}>
-        수정
+        저장
       </button>
       <button
         className="p-2 rounded border ml-2"
